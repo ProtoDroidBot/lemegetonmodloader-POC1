@@ -57,29 +57,25 @@ def remove_file_from_7zip(archive_path, file_to_remove, file):
         print(f"Error: The 7-Zip 7z executable '{seven_zip_executable}' was not found.")
         print("Please check your installation and ensure the executable is in your PATH or provide its full path.")
 
-pid = get_pid_by_name("exefile.exe")
-print(f"PID: {pid}" if pid else "Process not found")
-if pid:
-    print ("Attempting Mod Loading into EVE Frontier")
-
-    try:
-        shutil.copy(Path(f'C:\\CCP\\EVE Frontier\\{targetserver}\\code.ccp'), mod_folder)
-        mod_dir_abs = str(f'{mod_folder}')
-        compiled_directory_path = Path(f'{mod_dir_abs}')
-        for root, dirs, files in os.walk(compiled_directory_path):
-            for file in files:
-                if file == "code.ccp":
-                    continue
-                elif file.endswith(".pyc"):
-                    full_file_path = os.path.join(root, file)
-                    load_mods_into_path_modules(full_file_path, mod_dir_abs, file)
-                else:
-                    continue
-        shutil.copy(Path(f"{mod_folder}\\code.ccp"), f'C:\\CCP\\EVE Frontier\\{targetserver}\\code.ccp')
-        print("Success! Press any key to exit\n")
-    except Exception as e:
-        print(f"Failed to load mods due to {e}. :( \n")
-        exit()
+try:
+    shutil.copy(Path(f'C:\\CCP\\EVE Frontier\\{targetserver}\\code.ccp'), mod_folder)
+    mod_dir_abs = str(f'{mod_folder}')
+    compiled_directory_path = Path(f'{mod_dir_abs}')
+    for root, dirs, files in os.walk(compiled_directory_path):
+        for file in files:
+            if file == "code.ccp":
+                continue
+            elif file.endswith(".pyc"):
+                full_file_path = os.path.join(root, file)
+                load_mods_into_path_modules(full_file_path, mod_dir_abs, file)
+            else:
+                continue
+    shutil.copy(Path(f"{mod_folder}\\code.ccp"), f'C:\\CCP\\EVE Frontier\\{targetserver}\\code.ccp')
+    print("Success! Press any key to exit\n")
+    exit()
+except Exception as e:
+    print(f"Failed to load mods due to {e}. :( \n")
+    exit()
 
 else:
     exit()

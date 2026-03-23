@@ -51,7 +51,9 @@ param(
     [string]$targetserver,
     [Parameter(Mandatory = $false)]
     [string]$recompile,
-    [float]$IntervalSeconds = 0.15
+    [Parameter(Mandatory = $false)]
+    [string]$retryCount = 5,
+    [float]$IntervalSeconds = 1
 )
 
 # Path to Sysinternals Handle.exe
@@ -61,6 +63,7 @@ if (-not (Test-Path $HandleExe)) {
     Write-Error "handle64.exe not found at $HandleExe"
     exit 1
 }
+
 function PythonScriptsEF {
     if ($recompile -eq $true){
         if(Test-Path $pythonExe){
@@ -94,6 +97,55 @@ function PythonScriptsEF {
     return 0
 }
 
+function HandleHelper(){
+    Write-Host "Monitoring file handles for process: $ProcessName" -ForegroundColor Cyan
+    Write-Host "Press Ctrl+C to stop." -ForegroundColor Yellow
+    while ($true) {
+        try{
+        $test = Get-WmiObject Win32_Process -Filter "Name = 'exefile.exe'" | Select-Object Name, ProcessId, CommandLine
+        $pids = $test.ProcessId
+        if ($test -ne $null) {
+            Write-Host "caught process" -ForegroundColor Yellow
+            $running = $false
+            # Run handle.exe and filter for the process
+            $output = & $HandleExe -acceptEula -p $ProcessName 2>$null
+            # Extract only file paths from output
+            $currentHandles = $output |
+                Select-String -Pattern "File\s+" |
+                ForEach-Object { ($_ -split ":\s+", 2)[-1].Trim() } |
+                Sort-Object -Unique
+            $currentHandles
+            if ($currentHandles -match "manifest.dat"){
+                Write-Host "attempt" -ForegroundColor Yellow
+                $exe, $b, $c, $d, $e, $f, $g, $h, $i, $j = ($test.CommandLine).Split("/", 10)
+                $c = $c.Substring(0, 0) + "/"+ $c.Substring(0).Replace('"', "")
+                $d = $d.Substring(0, 0) + "/"+ $d.Substring(0).Replace('"', "")
+                $e = $e.Substring(0, 0) + "/"+ $e.Substring(0).Replace('"', "")
+                $f = $f.Substring(0, 0) + "/"+ $f.Substring(0).Replace('"', "")
+                $g = $g.Substring(0, 0) + "/"+ $g.Substring(0).Replace('"', "")
+                $h = $h.Substring(0, 0) + "/"+ $h.Substring(0).Replace('"', "")
+                $i = $i.Substring(0, 0) + "/"+ $i.Substring(0).Replace('"', "")
+                $j = $j.Substring(0, 0) + "/"+ $j.Substring(0).Replace('"', "")
+                $exe = $exe.Replace('"', "")
+                Start-Sleep -Seconds ($IntervalSeconds)
+                Stop-Process -Id $pids -Force
+                Write-Host "Attempting to inject mod files..." -ForegroundColor Yellow
+                Start-Process -FilePath $pythonExe -ArgumentList ".\mods\loadmod.py", $mod_folder, $targetserver, $SevenZExe
+                Start-Process -Wait -FilePath $exe -ArgumentList $c, $d, $e, $f, $g, $h, $i, $j
+                Write-Host "Done..." -ForegroundColor Yellow
+
+                }
+            }
+
+
+        }
+        catch {
+            Write-Error "Error: $_"
+            break
+        }
+
+    }
+}   
 
 # Store previous handle list for comparison
 $SevenZExe = Get-Item -LiteralPath $SevenZExe
@@ -102,34 +154,8 @@ while ($return -eq 1){
     $return = PythonScriptsEF
 }
 
-Write-Host "Monitoring file handles for process: $ProcessName" -ForegroundColor Cyan
-Write-Host "Press Ctrl+C to stop." -ForegroundColor Yellow
-while ($true) {
-    try {
-        # Run handle.exe and filter for the process
-        $output = & $HandleExe -p $ProcessName 2>$null
-        # Extract only file paths from output
-        $currentHandles = $output |
-            Select-String -Pattern "File\s+" |
-            ForEach-Object { ($_ -split ":\s+", 2)[-1].Trim() } |
-            Sort-Object -Unique
-        if ($currentHandles -match "code.ccp"){
-                $currentHandles
-        }
-        elseif ($currentHandles -match "manifest.dat"){
-            $currentHandles
-            Start-Sleep -Seconds 1
-            & $pythonExe "C:\Users\sebor\OneDrive\Software\pymemstuff\lemegetonmodloader\mods\loadmod.py", $mod_folder, $targetserver, $SevenZExe
+HandleHelper
 
-            break
-        }
-        # Update previous list
 
-        Start-Sleep -Seconds $IntervalSeconds
-    }
-    catch {
-        Write-Error "Error: $_"
-        break
-    }
-}
+
 #for /F "tokens=3,6 delims=: " %I IN ('C:\test\handle64.exe -accepteula "C:\CCP\EVE Frontier\utopia\code.ccp"') DO "C:\test\handle64.exe" -c %J -y -p %I
