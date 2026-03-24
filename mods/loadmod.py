@@ -9,6 +9,7 @@ import os
 mod_folder = sys.argv[1]
 targetserver = sys.argv[2]
 SevenZExe = sys.argv[3]
+precooked = sys.argv[3]
 def get_pid_by_name(process_name):
     """Return the PID of the first process matching the given name."""
     for proc in psutil.process_iter(['pid', 'name']):
@@ -16,7 +17,7 @@ def get_pid_by_name(process_name):
             return proc.info['pid']
     return None
 
-def load_mods_into_path_modules(target_path, mod_dir, file):
+def load_mods_into_path_modules(target_path, mod_dir):
     import_target_input = str(f"{target_path}")
     replace_target=(target_path.replace("\\__pycache__", "")).replace(f"{mod_dir}\\", '')
     print(replace_target)
@@ -24,7 +25,7 @@ def load_mods_into_path_modules(target_path, mod_dir, file):
         # Copy the file to the destination directory
 
         mod_zip = str(mod_dir + "\\code.ccp")
-        remove_file_from_7zip(mod_zip, replace_target, file)
+        remove_file_from_7zip(mod_zip, replace_target)
         # Insert the file into the existing ZIP archive using append mode ('a')
         with zipfile.ZipFile(mod_zip, 'a', compression=zipfile.ZIP_STORED) as zipf:
 
@@ -34,7 +35,7 @@ def load_mods_into_path_modules(target_path, mod_dir, file):
     except Exception as e:
         print(f"An unexpected error occurred in load_mods_into_path_modules: {e}")
 
-def remove_file_from_7zip(archive_path, file_to_remove, file):
+def remove_file_from_7zip(archive_path, file_to_remove):
     #seven_zip_executable = 'C:\\Program Files\\7-Zip\\7z.exe' 
     seven_zip_executable = Path(f'{SevenZExe}')
     print("Attempting file removal")
@@ -65,9 +66,9 @@ try:
         for file in files:
             if file == "code.ccp":
                 continue
-            elif file.endswith(".pyc"):
+            elif file.endswith(".pyc") and precooked != True:
                 full_file_path = os.path.join(root, file)
-                load_mods_into_path_modules(full_file_path, mod_dir_abs, file)
+                load_mods_into_path_modules(full_file_path, mod_dir_abs)
             else:
                 continue
     shutil.copy(Path(f"{mod_folder}\\code.ccp"), f'C:\\CCP\\EVE Frontier\\{targetserver}\\code.ccp')
@@ -75,8 +76,5 @@ try:
     exit()
 except Exception as e:
     print(f"Failed to load mods due to {e}. :( \n")
-    exit()
-
-else:
     exit()
         

@@ -34,7 +34,10 @@
 
 .PARAMETER recompile
     $recompile is a boolean flag that determines whether the mod files should be recompiled on each run. Set to $true to enable recompilation, or $false to skip it.
-
+.PARAMETER precached
+    $precached is a boolean flag that determines whether the mod files should be precached on each run. Set to $true to enable precaching, or $false to skip it.
+.PARAMETER interval
+    $Interval is a int value that determines the sleep interval (in seconds) between checks for the process and file handles. Default is 33 seconds.
 #>
 param(
     [Parameter(Mandatory = $true)]
@@ -51,9 +54,9 @@ param(
     [string]$targetserver,
     [Parameter(Mandatory = $false)]
     [string]$recompile,
-    [Parameter(Mandatory = $false)]
-    [string]$retryCount = 5,
-    [float]$IntervalSeconds = 1
+    [Parameter(Mandatory = $true)]
+    [string]$precached,
+    [float]$Interval = 33
 )
 
 # Path to Sysinternals Handle.exe
@@ -79,7 +82,8 @@ function PythonScriptsEF {
                         if(Test-Path $newpath){
                             Write-Host "Removing leftover file from $newpath" -ForegroundColor Yellow
                             Remove-Item -Path $newpath
-                            return 1
+                            Write-Host "renaming $newpath" -ForegroundColor Yellow
+                            Move-Item -Path $_.FullName -Destination $newpath;
                         }
                         else{
                             Write-Host "renaming $newpath" -ForegroundColor Yellow
@@ -102,58 +106,67 @@ function HandleHelper(){
     Write-Host "Press Ctrl+C to stop." -ForegroundColor Yellow
     while ($true) {
         try{
-        $test = Get-WmiObject Win32_Process -Filter "Name = 'exefile.exe'" | Select-Object Name, ProcessId, CommandLine
-        $pids = $test.ProcessId
-        if ($test -ne $null) {
-            Write-Host "caught process" -ForegroundColor Yellow
-            $running = $false
-            # Run handle.exe and filter for the process
-            $output = & $HandleExe -acceptEula -p $ProcessName 2>$null
-            # Extract only file paths from output
-            $currentHandles = $output |
-                Select-String -Pattern "File\s+" |
-                ForEach-Object { ($_ -split ":\s+", 2)[-1].Trim() } |
-                Sort-Object -Unique
-            $currentHandles
-            if ($currentHandles -match "manifest.dat"){
-                Write-Host "attempt" -ForegroundColor Yellow
-                $exe, $b, $c, $d, $e, $f, $g, $h, $i, $j = ($test.CommandLine).Split("/", 10)
-                $c = $c.Substring(0, 0) + "/"+ $c.Substring(0).Replace('"', "")
-                $d = $d.Substring(0, 0) + "/"+ $d.Substring(0).Replace('"', "")
-                $e = $e.Substring(0, 0) + "/"+ $e.Substring(0).Replace('"', "")
-                $f = $f.Substring(0, 0) + "/"+ $f.Substring(0).Replace('"', "")
-                $g = $g.Substring(0, 0) + "/"+ $g.Substring(0).Replace('"', "")
-                $h = $h.Substring(0, 0) + "/"+ $h.Substring(0).Replace('"', "")
-                $i = $i.Substring(0, 0) + "/"+ $i.Substring(0).Replace('"', "")
-                $j = $j.Substring(0, 0) + "/"+ $j.Substring(0).Replace('"', "")
-                $exe = $exe.Replace('"', "")
-                Start-Sleep -Seconds ($IntervalSeconds)
-                Stop-Process -Id $pids -Force
-                Write-Host "Attempting to inject mod files..." -ForegroundColor Yellow
-                Start-Process -FilePath $pythonExe -ArgumentList ".\mods\loadmod.py", $mod_folder, $targetserver, $SevenZExe
-                Start-Process -Wait -FilePath $exe -ArgumentList $c, $d, $e, $f, $g, $h, $i, $j
-                Write-Host "Done..." -ForegroundColor Yellow
+            $test = Get-WmiObject Win32_Process -Filter "Name = 'exefile.exe'" | Select-Object Name, ProcessId, CommandLine
+            $pids = $test.ProcessId
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            if ($test -ne $null) {
+                Write-Host "caught process" -ForegroundColor Yellow
+                # Run handle.exe and filter for the process
+                $sw.restart()
+                $output = & $HandleExe -acceptEula -p $ProcessName 2>$null
+                # Extract only file paths from output
+                $currentHandles = $output |
+                    Select-String -Pattern "File\s+" |
+                    ForEach-Object { ($_ -split ":\s+", 2)[-1].Trim() } |
+                    Sort-Object -Unique
+                $currentHandles
+                if ($currentHandles -match "manifest.dat"){
+                    $sw.Stop()
+                    Write-Output "Total time elapsed: $($sw.Elapsed.TotalSeconds) seconds"
+                    Write-Host "attempt" -ForegroundColor Yellow
+                    $exe, $b, $c, $d, $e, $f, $g, $h, $i, $j = ($test.CommandLine).Split("/", 10)
+                    $c = $c.Substring(0, 0) + "/"+ $c.Substring(0).Replace('"', "")
+                    $d = $d.Substring(0, 0) + "/"+ $d.Substring(0).Replace('"', "")
+                    $e = $e.Substring(0, 0) + "/"+ $e.Substring(0).Replace('"', "")
+                    $f = $f.Substring(0, 0) + "/"+ $f.Substring(0).Replace('"', "")
+                    $g = $g.Substring(0, 0) + "/"+ $g.Substring(0).Replace('"', "")
+                    $h = $h.Substring(0, 0) + "/"+ $h.Substring(0).Replace('"', "")
+                    $i = $i.Substring(0, 0) + "/"+ $i.Substring(0).Replace('"', "")
+                    $j = $j.Substring(0, 0) + "/"+ $j.Substring(0).Replace('"', "")
+                    $exe = $exe.Replace('"', "")
+                    Stop-Process -Id $pids -Force
 
+                    Write-Host "Attempting to inject mod files..." -ForegroundColor Yellow
+                    
+                    1..2 | Foreach-Object -Parallel {
+                        if ($_ -eq 1){
+                            ($using:sw.Elapsed.TotalSeconds)
+                            $using:Interval
+                            Start-Sleep -Seconds ($using:sw.Elapsed.TotalSeconds)
+                            & $using:pythonExe .\mods\loadmod.py $using:mod_folder $using:targetserver $using:SevenZExe $using:precached
+
+                        }else{
+                            Start-Sleep -Seconds ($using:Interval + $using:sw.Elapsed.TotalSeconds)
+                            Start-Process -FilePath $using:exe -ArgumentList "$using:c, $using:d, $using:e, $using:f, $using:g, $using:h, $using:i, $using:j"
+                        }
+
+                    }
+                    break
                 }
+
             }
 
-
-        }
-        catch {
+    } catch {
             Write-Error "Error: $_"
             break
         }
-
     }
 }   
 
 # Store previous handle list for comparison
 $SevenZExe = Get-Item -LiteralPath $SevenZExe
-$return = PythonScriptsEF
-while ($return -eq 1){
-    $return = PythonScriptsEF
-}
-
+$PSVersionTable
+PythonScriptsEF
 HandleHelper
 
 

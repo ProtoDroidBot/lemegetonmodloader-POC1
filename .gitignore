@@ -5,6 +5,8 @@ __pycache__/
 
 # Mods folder
 mods/*/
+Eula.txt
+handle*
 
 # C extensions
 *.so
