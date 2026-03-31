@@ -6,16 +6,14 @@ import shutil
 from pathlib import Path
 import zipfile
 import os
-mod_folder = sys.argv[1]
-targetserver = sys.argv[2]
-SevenZExe = sys.argv[3]
-precooked = sys.argv[3]
+
 def get_pid_by_name(process_name):
     """Return the PID of the first process matching the given name."""
     for proc in psutil.process_iter(['pid', 'name']):
         if proc.info['name'] == process_name:
             return proc.info['pid']
     return None
+
 
 def load_mods_into_path_modules(target_path, mod_dir):
     import_target_input = str(f"{target_path}")
@@ -33,7 +31,7 @@ def load_mods_into_path_modules(target_path, mod_dir):
             print(f"Added {import_target_input} to {mod_zip}")
 
     except Exception as e:
-        print(f"An unexpected error occurred in load_mods_into_path_modules: {e}")
+        print(f"An unexpected error occurred in load_mods_into_path_modules: {e}; please inform ProtoDroidBot and create an issue on GitHub at: ")
 
 def remove_file_from_7zip(archive_path, file_to_remove):
     #seven_zip_executable = 'C:\\Program Files\\7-Zip\\7z.exe' 
@@ -53,28 +51,37 @@ def remove_file_from_7zip(archive_path, file_to_remove):
         print(f"Successfully removed '{file_to_remove}' from '{archive_path}'")
 
     except subprocess.CalledProcessError as e:
-        print(f"Error removing file: {e.stderr}")
-    except FileNotFoundError:
-        print(f"Error: The 7-Zip 7z executable '{seven_zip_executable}' was not found.")
-        print("Please check your installation and ensure the executable is in your PATH or provide its full path.")
+        print(f"Error removing file from the modded code.ccp file: {e}")
+    except Exception as err:
+        print(f"There was another unresolved error in the remove_file_from_7zip function: {err}; please inform ProtoDroidBot and create an issue on GitHub at: ")
 
-try:
-    shutil.copy(Path(f'C:\\CCP\\EVE Frontier\\{targetserver}\\code.ccp'), mod_folder)
-    mod_dir_abs = str(f'{mod_folder}')
-    compiled_directory_path = Path(f'{mod_dir_abs}')
-    for root, dirs, files in os.walk(compiled_directory_path):
-        for file in files:
-            if file == "code.ccp":
-                continue
-            elif file.endswith(".pyc") and precooked != True:
-                full_file_path = os.path.join(root, file)
-                load_mods_into_path_modules(full_file_path, mod_dir_abs)
-            else:
-                continue
-    shutil.copy(Path(f"{mod_folder}\\code.ccp"), f'C:\\CCP\\EVE Frontier\\{targetserver}\\code.ccp')
-    print("Success! Press any key to exit\n")
-    exit()
-except Exception as e:
-    print(f"Failed to load mods due to {e}. :( \n")
-    exit()
+def modloader(gamepath, mod_folder):
+    try:
+        game = Path(gamepath)
+        print(game)
+        mod_dir_original = Path(mod_folder)
+        mod_dir = mod_dir_original
+        print(mod_dir, mod_dir_original)
+        mod_dir.joinpath(mod_dir, 'code.ccp')
+        #{gamepath}\\{targetserver}\\code.ccp
+        game.joinpath(game, 'code.ccp')
+        shutil.copy(Path(game), mod_dir)
+        #mod_dir_abs = str(f'{mod_folder}')
+        #compiled_directory_path = Path(f'{mod_dir_abs}')
+
+        for root, dirs, files in os.walk(mod_dir_original):
+            for file in files:
+                if file == "code.ccp":
+                    continue
+                elif file.endswith(".pyc"):
+                    full_file_path = os.path.join(root, file)
+                    load_mods_into_path_modules(full_file_path, mod_dir)
+                else:
+                    continue
+                #Path(f"{mod_folder}\\code.ccp")
+            
+        shutil.copy(mod_dir, game)
+        print("Code.ccp file overwritten, game should launch with the modified file\n")
+    except Exception as e:
+        print(f"Failed to load mods due to this error: {e}. :( \n")
         
