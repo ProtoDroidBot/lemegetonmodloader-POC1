@@ -1,4 +1,21 @@
 [Test Mod Loader for EVE Frontier]
+- Run PowerShell as Administrator (Handle.exe requires elevated privileges)
+
+- EVE Frontier (https://www.evefrontier.com/)
+
+- Sysinternals Handle.exe (https://learn.microsoft.com/sysinternals/downloads/handle)
+
+- Python version 3.12 (ideally Python 3.12rc2) and python3 binary copied/renamed to python312.exe, else point to your installed python 3.12 EXE file.
+
+- 7-zip - (https://www.7-zip.org/)
+
+- decompiled python files / Pylingual extracts from the code.ccp file. note that the directory structure MUST be retained when editing. YMMV otherwise!
+
+! - Note that I shouldn't provide the decompiled python files from the code.ccp file due to legal reasons, but you can obtain them yourself using a tool like Pylingual
+
+! - Some editing required on the decompiled python files is needed in order to get them to compile because of the way Python 3.12 bytecode works.
+
+
 
 <#
 .SYNOPSIS
