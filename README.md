@@ -11,9 +11,9 @@
 
 - decompiled python files / Pylingual extracts from the code.ccp file. note that the directory structure MUST be retained when editing. YMMV otherwise!
 
-! - Note that I shouldn't provide the decompiled python files from the code.ccp file due to legal reasons, but you can obtain them yourself using a tool like Pylingual
+- Note that I shouldn't provide the decompiled python files from the code.ccp file due to legal reasons, but you can obtain them yourself using a tool like Pylingual
 
-! - Some editing required on the decompiled python files is needed in order to get them to compile because of the way Python 3.12 bytecode works.
+- Some editing required on the decompiled python files is needed in order to get them to compile because of the way Python 3.12 bytecode works.
 
 
 
