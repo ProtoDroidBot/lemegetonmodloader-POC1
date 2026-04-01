@@ -3,11 +3,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Mods folder
-mods/*/
-Eula.txt
-handle*
-
 # C extensions
 *.so
 
@@ -184,3 +179,4 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+mods/SSU_to_Industry/code.ccp
