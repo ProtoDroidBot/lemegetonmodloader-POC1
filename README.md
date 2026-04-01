@@ -15,6 +15,7 @@
 
 - Some editing required on the decompiled python files is needed in order to get them to compile because of the way Python 3.12 bytecode works.
 
+- PowerShell 7 required ( https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows?view=powershell-7.6 )
 
 
 <#
